@@ -1,0 +1,88 @@
+version: "3.4"
+services:
+  julia_test:
+    image: docker.allgeier-it.de:5000/julia36-ubuntu2004-test:${PATCHLEVEL}
+    depends_on:
+      - mongo
+    #build:
+    #  context: ./testsystem
+    #  dockerfile: Dockerfile
+    container_name: julia36-test
+    hostname: julia36-test
+    ports:
+      - "443:443" # Webinterface
+      - "445:445" # Webinterface
+      - "446:446" # Webinterface
+      - "4001:22" # SSH
+      - "25:25"   # Julia MailOffce interface
+      - "26:26"   # Julia Gateway interface
+    volumes:
+      - ./data:/tmp/data
+      - /tmp:/tmp/tmp
+      - /Users/meik/program/git.allgeier-it.de/julia/cake:/opt/julia/html
+      # Let it point to your home directory for local
+      # development.
+      # Change http.conf in docker to allow link and
+      # open_basedir outside /opt/julia.
+      #- ~/program/git.allgeier-it.de/julia/cake:/opt/julia/html
+      #- ~/program/git.allgeier-it.de/julia/newwebmailer:/opt/julia/newwebmailer
+    links:
+      - mongo
+      - julia_test_mailserver
+    environment:
+      - START_SSHD=yes
+      - START_HTTPD=yes
+      - START_POSTFIX=yes
+      - START_JWATCHDOG=yes
+      - START_EMILY=yes
+
+  julia_test1:
+    image: docker.allgeier-it.de:5000/julia36-ubuntu2004-test:${PATCHLEVEL}
+    #build:
+    #  context: ./testsystem
+    #  dockerfile: Dockerfile
+    container_name: julia36-test1
+    hostname: julia36-test1
+    ports:
+      - "444:443" # Webinterface
+      - "4002:22" # SSH
+      - "27:25"   # Julia MailOffce interface
+      - "28:26"   # Julia Gateway interface
+    volumes:
+      - ./data:/tmp/data
+      - /tmp:/tmp/tmp
+    links:
+      - mongo
+      - julia_test_mailserver
+    environment:
+      - START_SSHD=yes
+      - START_HTTPD=yes
+      - START_POSTFIX=yes
+      - START_JWATCHDOG=yes
+      - START_EMILY=no
+
+  julia_test_mailserver:
+    image: docker.allgeier-it.de:5000/julia36-postfix-dovecot
+    depends_on:
+      - mongo
+    #build:
+    #  context: ./mailserver
+    #  dockerfile: Dockerfile
+    container_name: julia36-test-mailserver
+    ports:
+      - "110:110" # pop3
+      - "995:995" # pop3
+      - "143:143" # imap
+      - "993:993" # imap
+      - "4010:22" # ssh
+
+  mongo:
+    image: docker.allgeier-it.de:5000/mongo:latest
+    restart: always
+    ports:
+      - "27018:27017"
+    #volumes:
+    #  - ./mongodata:/data/db
+    #environment:
+      #MONGO_INITDB_ROOT_USERNAME: root
+      #MONGO_INITDB_ROOT_PASSWORD: root

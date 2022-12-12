@@ -1,0 +1,70 @@
+VERSION 0.6
+
+ARG PATCHLEVEL=latest
+ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-postfix-dovecot
+
+baseos:
+    FROM ubuntu:20.04
+    ENV DEBIAN_FRONTEND noninteractive
+
+    # Syslog is needed for Postfix, sodo for jwatchdog.
+    # Dovecot
+    RUN apt-get update && apt-get upgrade -y && \
+        apt-get -y install apt-utils \
+        inetutils-syslogd sudo \
+        postfix telnet net-tools inetutils-ping \
+        dovecot-core dovecot-imapd dovecot-pop3d
+
+    ##
+    # Users
+    ##
+    RUN adduser --disabled-password --gecos "" bob
+    RUN echo 'bob:test' | chpasswd
+    RUN adduser --disabled-password --gecos "" alice
+    RUN echo 'alice:test' | chpasswd
+
+    ##
+    # Postfix
+    ##
+    RUN postconf -e "mynetworks=127.0.0.0/8 192.168.0.0/16 172.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128"
+
+    # Virtual user table.
+    RUN postconf -e "virtual_alias_maps=hash:/etc/postfix/virtual"
+
+    # Virtual entries for postfix.
+    RUN echo "@iccgmbh.com alice" >> /etc/postfix/virtual
+    RUN echo "@internal.com alice" >> /etc/postfix/virtual
+    RUN echo "@archlinux.lan alice" >> /etc/postfix/virtual
+
+    RUN echo "@t-online.de bob" >> /etc/postfix/virtual
+    RUN echo "@external.com bob" >> /etc/postfix/virtual
+    RUN echo "@exarchlinux.lan bob" >> /etc/postfix/virtual
+    RUN echo "@gmail.com bob" >> /etc/postfix/virtual
+    RUN cd /etc/postfix && postmap virtual
+
+    # Allow plaintext auth without TLS.
+    RUN echo "disable_plaintext_auth = no" >> /etc/dovecot/conf.d/10-auth.conf
+
+    ENV NOTVISIBLE "in users profile"
+    RUN echo "export VISIBLE=now" >> /etc/profile
+
+    RUN mkdir -p /app
+    COPY bin/docker-start.sh /app/
+
+
+    ENTRYPOINT ["/app/docker-start.sh", ""]
+
+    # Postfix
+    EXPOSE 25
+
+    # Dovcot
+    EXPOSE 110
+    EXPOSE 143
+    EXPOSE 993
+    EXPOSE 995
+
+release:
+        FROM +baseos
+        ARG PATCHLEVEL
+        ARG IMAGE_NAME
+        SAVE IMAGE --push $IMAGE_NAME:$PATCHLEVEL

@@ -1,0 +1,21 @@
+VERSION 0.6
+
+ARG PATCHLEVEL=latest
+ARG IMAGE_NAME=docker.allgeier-it.de:5000/mongo
+
+baseos:
+    FROM mongo:5
+
+    COPY etc/* /etc/
+    RUN mkdir /app
+    COPY app app/
+
+    CMD ["/app/run.sh"]
+
+    EXPOSE 27017
+
+release:
+        FROM +baseos
+        ARG PATCHLEVEL
+        ARG IMAGE_NAME
+        SAVE IMAGE --push $IMAGE_NAME:$PATCHLEVEL

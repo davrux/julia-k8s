@@ -1,24 +1,31 @@
-# Overview
+# Julia Development Test System
 
-Build Julia test image.
-
-# Build
-
-Use --PATCHLEVEL for patchlevel name.
-
-Use --BASICAUTH for HTTP basic auth to download server. When not set, SSH is
-used.
+Build and push Julia. See julia/README.md for details.
 
 ``` sh
-# Local build
-earthly +release --PATCHLEVEL=latest --BASICAUTH="user:password"
+# No push
+earthly +julia --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
 
-earthly +release --PATCHLEVEL=feature3 --BASICAUTH="user:password"
-    
-# Build and push
-earthly --push +release --PATCHLEVEL=latest --BASICAUTH="user:password"
-
-earthly --push +release --PATCHLEVEL=feature3 --BASICAUTH="user:password"
+earthly --push +julia --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
 ```
 
-*Note*: latest maybe unstable.
+
+Build and push all
+
+``` sh
+# No push
+earthly +all --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+
+# Push
+earthly --push +all --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+```
+
+Images generated (example output):
+
+``` sh
+docker image ls
+REPOSITORY                                           TAG        IMAGE ID       CREATED          SIZE
+docker.allgeier-it.de:5000/julia36-ubuntu2004-test   feature3   4590cf608061   22 minutes ago   2.7GB
+docker.allgeier-it.de:5000/julia36-postfix-dovecot   latest     b66b338dc024   24 minutes ago   210MB
+docker.allgeier-it.de:5000/mongo                     latest     31291f65ee9a   24 minutes ago   700MB
+```
