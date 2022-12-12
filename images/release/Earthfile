@@ -1,0 +1,159 @@
+VERSION 0.6
+
+ARG PATCHLEVEL
+ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-smtp
+ARG BASICAUTH
+
+get:
+        LOCALLY
+        ARG PATCHLEVEL
+        ARG BASICAUTH
+        RUN bin/get-image.sh $PATCHLEVEL $BASICAUTH
+
+os-base:
+        BUILD +get
+        FROM ubuntu:20.04
+
+        ENV DEBIAN_FRONTEND noninteractive
+
+        # this is for non ascii keyboard characters.
+        ENV LC_ALL C.UTF-8
+        ENV LANG en_US.UTF-8
+        ENV LANGUAGE en_US:en
+
+        # From http://askubuntu.com/a/25614
+        RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections
+
+        # Only use one apt-get.
+        # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+        # sudo for jwatchdog.
+        # libarchive-tools includes bsdtar
+        RUN apt-get update --fix-missing && apt-get upgrade -y && \
+            apt-get -y install apt-utils \
+            bc dialog curl wget rsync openssh-server openssh-client \
+            libarchive-tools \
+            sudo \
+            telnet net-tools inetutils-ping vim \
+            libfreetype6 libx11-6 libxext6 libxrender1 libfontconfig1 \
+            xfonts-base xfonts-encodings xfonts-scalable fontconfig \
+            ttf-mscorefonts-installer \
+            ttf-wqy-microhei ttf-wqy-zenhei fonts-dejima-mincho fonts-horai-umefont \
+            fonts-takao fonts-takao-gothic fonts-takao-mincho fonts-takao-pgothic \
+            fonts-wqy-microhei ttf-wqy-microhei fonts-wqy-zenhei ttf-wqy-zenhei xfonts-thai \
+            make unzip \
+            locales \
+            rclone \
+            && rm -rf /var/lib/apt/lists/*
+
+        #
+        # Locale
+        #
+        RUN locale-gen en_US.UTF-8
+        RUN update-locale LANG=en_US.UTF-8
+
+        #
+        # SSHD
+        # See: https://docs.docker.com/engine/examples/running_ssh_service/
+        #
+        RUN mkdir /var/run/sshd
+        RUN echo 'root:test12' | chpasswd
+        #RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+        RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+        # SSH login fix. Otherwise user is kicked off after login
+        RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+        ENV NOTVISIBLE "in users profile"
+        RUN echo "export VISIBLE=now" >> /etc/profile
+
+        #
+        # For PDFv2
+        #
+        RUN fc-cache -f -v
+
+base-julia:
+        FROM +os-base
+        
+        #
+        # Julia needed users and groups.
+        #
+
+        # Create Postfix users and groups
+        RUN groupadd -g 89 postdrop
+        RUN groupadd -g 90 postfix
+        RUN adduser --system --home /opt/julia --shell /bin/false --no-create-home --uid 90 --gid 90 postfix
+
+        # Create Julia user and group
+        RUN groupadd -g 200 julia 
+        RUN useradd -c "Julia User" -d /opt/julia --no-create-home -u 200 -g julia julia
+
+julia-builder:
+        FROM +base-julia
+
+        ENV DEBIAN_FRONTEND noninteractive
+
+        #
+        # Install Julia
+        #
+        ARG PATCHLEVEL
+
+        COPY julia-3.6-64bit212-install-*.tar.gz /tmp/
+        RUN cd /tmp/ && tar xzvf julia-3.6-64bit212-install-*.tar.gz
+
+        RUN cd /tmp/julia-install && ./julia-install.sh docker
+        RUN rm /opt/julia/etc/master-node
+        RUN mkdir -p /opt/julia-clients
+        RUN chown julia:julia /opt/julia-clients
+
+        # Log to postfix.log.
+        RUN echo "maillog_file_prefixes=/opt/julia/var/logs" >> /opt/julia/etc/postfix-in/main.cf
+        RUN echo "maillog_file = /opt/julia/var/logs/postfix.log" >> /opt/julia/etc/postfix-in/main.cf
+
+        # Backup all dirs we use in container/pods later.
+        # The bootstrap script is started by an init container.
+        RUN mkdir -m750 -p /opt/julia/share/julia-tmpl
+        RUN cd /opt/julia && tar czvf share/julia-tmpl/tmpl.tar.gz var
+        COPY bin/bootstrap.sh /opt/julia/share/julia-tmpl/
+
+        RUN /opt/julia/sbin/julia-set-rights /opt/julia
+
+        SAVE ARTIFACT /opt/julia /opt/julia
+
+
+julia-dist:
+        FROM +base-julia
+
+        # Copy julia and create clients directory.
+        COPY +julia-builder/opt/julia /opt/julia
+
+        # Set rights
+        RUN /opt/julia/sbin/julia-set-rights /opt/julia
+
+        RUN mkdir -p /opt/julia-clients
+        RUN chown julia:julia /opt/julia-clients
+
+        RUN mkdir -p /app
+        COPY bin/start.sh /app/
+        COPY bin/cfg-update.sh /app/
+        COPY bin/load-cfg-update.sh /app/
+
+        CMD ["/app/start.sh"]
+
+        ENV START_SSHD="yes"
+        ENV START_HTTPD="yes"
+        ENV START_POSTFIX="yes"
+        ENV START_JWATCHDOG="yes"
+        ENV START_EMILY="no"
+
+        # Allow SSH, Apache
+        EXPOSE 22
+        EXPOSE 443
+        # Postfix 25 = mailoffice, 26 = gateway
+        EXPOSE 25
+        EXPOSE 26
+
+release:
+        FROM +julia-dist
+        ARG PATCHLEVEL
+        ARG IMAGE_NAME
+        SAVE IMAGE --push $IMAGE_NAME:$PATCHLEVEL

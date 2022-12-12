@@ -1,0 +1,158 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: julia-headless
+  labels:
+    app: julia-mailoffice
+spec:
+  ports:
+  - port: 443
+    name: webinterface
+  - port: 25
+    name: mailoffice
+  - port: 26
+    name: gateway
+  clusterIP: None
+  selector:
+    app: julia-mailoffice
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: julia
+  labels:
+    app: julia-mailoffice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: julia-mailoffice
+  serviceName: "julia"
+  template:
+    metadata:
+      labels:
+        app: julia-mailoffice
+    spec:
+      containers:
+      ##
+      # Postfix
+      ##
+      - name: postfix
+        image: docker.allgeier-it.de:5000/julia36-smtp:feature3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 25
+        - containerPort: 26
+        envFrom:
+        - secretRef:
+            name: rclone-secret
+        # TODO: Use command later
+        env:
+        - name: START_SYSLOGD
+          value: "no"
+        - name: START_SSHD
+          value: "no"
+        - name: START_HTTPD
+          value: "no"
+        - name: START_POSTFIX
+          value: "yes"
+        - name: START_JWATCHDOG
+          value: "no"
+        - name: START_EMILY
+          value: "no"
+        volumeMounts:
+        - name: var-storage
+          mountPath: /opt/julia/var
+
+        - name: config
+          mountPath: "/config"
+          readOnly: true
+
+      ##
+      # Apache
+      ##
+      - name: apache
+        image: docker.allgeier-it.de:5000/julia36-smtp:feature3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 443
+        envFrom:
+        - secretRef:
+            name: rclone-secret
+        command: ["/opt/julia/sbin/webinterface"]
+        args: ["-D", "FOREGROUND"]
+        volumeMounts:
+        - name: var-storage
+          mountPath: /opt/julia/var
+      ##
+      # jwatchdogd
+      ##
+      - name: jwatchdog
+        image: docker.allgeier-it.de:5000/julia36-smtp:feature3
+        imagePullPolicy: Always
+        ports:
+        envFrom:
+        - secretRef:
+            name: rclone-secret
+        command: ["/opt/julia/bin/jwatchdogd"]
+        args: ["/opt/julia"]
+        securityContext:
+          runAsUser: 200
+          runAsGroup: 200
+        volumeMounts:
+        - name: var-storage
+          mountPath: /opt/julia/var
+      ##
+      # SSH
+      ##
+      - name: ssh
+        image: docker.allgeier-it.de:5000/julia36-smtp:feature3
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: rclone-secret
+        ports:
+        - containerPort: 22
+        command: ["/usr/sbin/sshd"]
+        args: ["-D"]
+        volumeMounts:
+        - name: var-storage
+          mountPath: /opt/julia/var
+          
+      initContainers:
+      - name: init
+        image: docker.allgeier-it.de:5000/julia36-smtp:feature3
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: rclone-secret
+        command: ["/opt/julia/share/julia-tmpl/bootstrap.sh"]
+        volumeMounts:
+        - name: var-storage
+          mountPath: /opt/julia/var
+
+        - name: config
+          mountPath: "/config"
+          readOnly: true
+
+      imagePullSecrets:
+      - name: docker-allgeier
+
+      volumes:
+      - name: config
+        configMap:
+          name: version-cfg
+
+  ##
+  # Claim template
+  ##
+  volumeClaimTemplates:
+  - metadata:
+      name: var-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: ebs-sc
+      resources:
+        requests:
+          storage: 8Gi

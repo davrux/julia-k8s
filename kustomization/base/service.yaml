@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: julia-mailoffice
+  labels:
+    app: julia-mailoffice
+spec:
+  ports:
+  - port: 25
+    name: mailoffice
+
+  selector:
+    app: julia-mailoffice
+
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: julia-gateway
+  labels:
+    app: julia-gateway
+spec:
+  ports:
+  - port: 26
+    name: gateway
+
+  selector:
+    app: julia-mailoffice
+
+  type: ClusterIP
+

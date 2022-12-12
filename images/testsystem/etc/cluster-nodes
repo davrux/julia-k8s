@@ -1,0 +1,6 @@
+NODE_1_SERVER=julia36-test
+NODE_1_PORT=22
+
+NODE_2_SERVER=julia36-test1
+NODE_2_PORT=22
+

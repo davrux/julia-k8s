@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: julia
+resources:
+- namespace.yaml
+- secrets
+- config
+- storageclass.yaml
+- docker-secret
+- statefulset.yaml
+- service.yaml
