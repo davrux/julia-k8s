@@ -6,15 +6,9 @@
 trap "echo TRAPed signal" HUP INT QUIT TERM
 
 /usr/sbin/syslogd
-/usr/sbin/sshd
 /usr/sbin/dovecot
-postfix start
+postfix start-fg
 
-echo "[hit enter key to exit] or run 'docker stop <container>'"
-tail -f /var/log/mail.log
-
-# stop service and clean up here
-postfix stop
 /usr/sbin/dovecot stop
 
 echo "exited $0"

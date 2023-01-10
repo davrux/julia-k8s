@@ -31,6 +31,10 @@ baseos:
     # Virtual user table.
     RUN postconf -e "virtual_alias_maps=hash:/etc/postfix/virtual"
 
+    #RUN postconf "maillog_file_prefixes=/data,/var,/dev"
+    RUN postconf "maillog_file=/dev/stdout"
+
+
     # Virtual entries for postfix.
     RUN echo "@iccgmbh.com alice" >> /etc/postfix/virtual
     RUN echo "@internal.com alice" >> /etc/postfix/virtual
