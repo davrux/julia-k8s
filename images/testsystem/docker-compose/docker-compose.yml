@@ -19,7 +19,6 @@ services:
     volumes:
       - ./data:/tmp/data
       - /tmp:/tmp/tmp
-      - /Users/meik/program/git.allgeier-it.de/julia/cake:/opt/julia/html
       # Let it point to your home directory for local
       # development.
       # Change http.conf in docker to allow link and
