@@ -127,7 +127,7 @@ echo "Now checking SHA-1 again"
 sha1sum --check $SHA1_NAME
 if [ $? != 0 ]; then
     echo "ERROR: Downloaded latest image, but SHA-1 does still not match :("
-    get_image
+    exit 1
 fi
 
 print_patchlevel
