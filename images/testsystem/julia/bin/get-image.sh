@@ -36,32 +36,20 @@ SHA_NAME=julia-3.6-64bit212-install-$VERSION-sha1.txt
 DLPATH=www.ssl-proxy.info:/var/www/sslproxy/julia-download/releases
 DLPATHWEB=https://juliahilfe.allgeier-it.de/julia-download/releases
 
-# Download from beta, if requested as latest.
-if [ "$VERSION" == "latest" ]; then
+# Binary to use for checksum.
+SUM_BIN=sha1sum
+
+function use_beta() {
     DLPATH=www.ssl-proxy.info:/var/www/sslproxy/julia-download/beta
-    USE_SCP="true"
-
-    IMG_NAME=`ssh $SSH_USER@www.ssl-proxy.info ls /var/www/sslproxy/julia-download/beta/julia-3.6-64bit212-install-*.tar.gz`
-    if [ $? != "0" ]; then
-        echo "Error getting image name."
-        exit 1
-    fi
-
-    IMG_NAME=`basename $IMG_NAME`
-    
-    SHA_NAME=`ssh $SSH_USER@www.ssl-proxy.info ls /var/www/sslproxy/julia-download/beta/julia-3.6-64bit212-install-*-sha1.txt`
-    if [ $? != "0" ]; then
-        echo "Error getting image sha 1 name."
-        exit 1
-    fi
-
-    SHA_NAME=`basename $SHA_NAME`
-fi
+    DLPATHWEB=https://juliahilfe.allgeier-it.de/julia-download/beta
+}
 
 #
 # Download latest julia 3.6 image.
 #
 function get_image() {
+    get_sha1
+
     if [ "$USE_SCP" == "true" ]; then
         scp $SSH_USER@$DLPATH/$IMG_NAME .
     else
@@ -96,26 +84,23 @@ function print_patchlevel() {
     echo "PATCHLEVEL:$l"
 }
 
-# First download sha1, always.
-get_sha1
-
-IMAGE_NAME=`ls $IMG_NAME`
-SHA1_NAME=`ls $SHA_NAME`
+function clean_download() {
+    rm -f julia-3.6-64bit212-install-feature4
+}
 
 # No image, load it.
-if [ ! -f "$IMAGE_NAME" ]; then
+if [ ! -f "$IMAGE_NAME" ] || [ ! -f "$SHA1_NAME" ] ; then
     echo "No image found, downloading image."
     get_image
 fi
 
-echo "Image: $IMAGE_NAME"
-echo "SHA-1: $SHA1_NAME"
-
 # Compare SHA-1
-echo "Checking SHA-1"
-sha1sum --check $SHA1_NAME
+echo "Checking SHA"
+$SUM_BIN --check $SHA_NAME
 if [ $? != 0 ]; then
-    echo "SHA-1 checksum does not match, downloading latest julia image."
+    echo "Checksum does not match, downloading latest julia image."
+    clean_download
+    use_beta
     get_image
 else
     echo "Done, image is up-to-date. :)"
@@ -123,10 +108,11 @@ else
     exit 0
 fi
 
-echo "Now checking SHA-1 again"
-sha1sum --check $SHA1_NAME
+echo "Now checking SHA again"
+$SUM_BIN --check $SHA_NAME
 if [ $? != 0 ]; then
-    echo "ERROR: Downloaded latest image, but SHA-1 does still not match :("
+    echo "ERROR: Downloaded latest image, but checksum does still not match :("
+    clean_download
     exit 1
 fi
 
