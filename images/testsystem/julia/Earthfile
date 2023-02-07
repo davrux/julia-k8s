@@ -110,7 +110,7 @@ julia-builder:
 
         # Log to postfix.log.
         RUN echo "maillog_file_prefixes=/opt/julia/var/logs" >> /opt/julia/etc/postfix-in/main.cf
-        RUN echo "maillog_file = /opt/julia/var/logs/postfix.log" >> /opt/julia/etc/postfix-in/main.cf
+        RUN echo "maillog_file=/opt/julia/var/logs/postfix.log" >> /opt/julia/etc/postfix-in/main.cf
 
         # For cluster
         COPY etc/rsync-keys.tar.gz /opt/julia/etc/
