@@ -2,13 +2,13 @@ VERSION 0.6
 
 ARG PATCHLEVEL
 ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-smtp
-ARG BASICAUTH
+ARG JUP_USER
+ARG JUP_PASSWORD
+ARG BETA=false
 
 get:
         LOCALLY
-        ARG PATCHLEVEL
-        ARG BASICAUTH
-        RUN bin/get-image.sh $PATCHLEVEL $BASICAUTH
+        RUN bin/get-image.sh -v $PATCHLEVEL -b $BETA -a $JUP_USER:$JUP_PASSWORD
 
 os-base:
         BUILD +get

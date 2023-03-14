@@ -6,19 +6,20 @@ Build Julia test image.
 
 Use --PATCHLEVEL for patchlevel name.
 
-Use --BASICAUTH for HTTP basic auth to download server. When not set, SSH is
-used.
+Use --BETA=true to download BETA image.
+
+Use --JUP_USER and --JUP_PASSWORD for basic auth user and password. 
 
 ``` sh
 # Local build
-earthly +release --PATCHLEVEL=latest --BASICAUTH="user:password"
+earthly +release --PATCHLEVEL=<patchlevel> --JUP_USER="user" --JUP_PASSWORD="password"
 
-earthly +release --PATCHLEVEL=feature3 --BASICAUTH="user:password"
-    
+# To download from BETA use
+earthly +release --PATCHLEVEL=<patchlevel> --BETA=true --JUP_USER="user" --JUP_PASSWORD="password"
+
 # Build and push
-earthly --push +release --PATCHLEVEL=latest --BASICAUTH="user:password"
+earthly --push +release --PATCHLEVEL=<patchlevel> --JUP_USER="user" --JUP_PASSWORD="password"
 
-earthly --push +release --PATCHLEVEL=feature3 --BASICAUTH="user:password"
 ```
 
-*Note*: latest maybe unstable.
+*Note*: Beta maybe unstable.

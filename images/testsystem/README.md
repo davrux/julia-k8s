@@ -4,9 +4,9 @@ Build and push Julia. See julia/README.md for details.
 
 ``` sh
 # No push
-earthly +julia --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+earthly +julia --PATCHLEVEL=<patchlevel> --JUP_USER=<user> --JUP_PASSWORD=<pw>
 
-earthly --push +julia --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+earthly --push +julia --PATCHLEVEL=<patchlevel> --JUP_USER=<user> --JUP_PASSWORD=<pw>
 ```
 
 
@@ -14,10 +14,10 @@ Build and push all
 
 ``` sh
 # No push
-earthly +all --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+earthly +all --PATCHLEVEL=<patchlevel> --JUP_USER=<user> --JUP_PASSWORD=<pw>
 
 # Push
-earthly --push +all --PATCHLEVEL=feature3 --BASICAUTH="user:pw" --JUP_USER=<user> --JUP_PASSWORD=<pw>
+earthly --push +all --PATCHLEVEL=<patchlevel> --JUP_USER=<user> --JUP_PASSWORD=<pw>
 ```
 
 Images generated (example output):

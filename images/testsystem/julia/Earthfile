@@ -2,15 +2,16 @@ VERSION 0.6
 
 ARG --required PATCHLEVEL
 ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-ubuntu2004-test
-ARG BASICAUTH
 ARG JUP_USER
 ARG JUP_PASSWORD
+ARG BETA=false
+
+# When bind mount is used, map to local user.
+ARG JULIA_UID_GID=1000
 
 get:
         LOCALLY
-        ARG PATCHLEVEL
-        ARG BASICAUTH
-        RUN bin/get-image.sh $PATCHLEVEL $BASICAUTH
+        RUN bin/get-image.sh -v $PATCHLEVEL -b $BETA -a $JUP_USER:$JUP_PASSWORD
 
 os-base:
         BUILD +get
@@ -85,8 +86,9 @@ base-julia:
         RUN adduser --system --home /opt/julia --shell /bin/false --no-create-home --uid 90 --gid 90 postfix
 
         # Create Julia user and group
-        RUN groupadd -g 200 julia 
-        RUN useradd -c "Julia User" -d /opt/julia --no-create-home -u 200 -g julia julia
+        #RUN groupadd -g 200 julia
+        RUN groupadd -g $JULIA_UID_GID julia
+        RUN useradd -c "Julia User" -d /opt/julia --no-create-home -u $JULIA_UID_GID -g julia julia
 
 julia-builder:
         FROM +base-julia
@@ -107,10 +109,6 @@ julia-builder:
         RUN rm /opt/julia/etc/master-node
         RUN mkdir -p /opt/julia-clients
         RUN chown julia:julia /opt/julia-clients
-
-        # Log to postfix.log.
-        RUN echo "maillog_file_prefixes=/opt/julia/var/logs" >> /opt/julia/etc/postfix-in/main.cf
-        RUN echo "maillog_file=/opt/julia/var/logs/postfix.log" >> /opt/julia/etc/postfix-in/main.cf
 
         # For cluster
         COPY etc/rsync-keys.tar.gz /opt/julia/etc/
@@ -134,6 +132,10 @@ julia-builder:
         RUN cd /opt/julia && tar xzvf /tmp/masterkey.tar.gz
 
         # Postfix
+        # Log to postfix.log.
+        #RUN /opt/julia/sbin/postconf maillog_file_prefixes="/opt/julia/var/logs /var /dev/stdout"
+        #RUN /opt/julia/sbin/postconf maillog_file="/opt/julia/var/logs/postfix.log"
+
         RUN echo "* smtp:julia_test_mailserver" > /opt/julia/etc/postfix-in/transport
         RUN /opt/julia/sbin/postmap /opt/julia/etc/postfix-in/transport
         RUN echo "172 OK" >> /opt/julia/etc/postfix-in/access
