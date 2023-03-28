@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   julia_test:
-    image: docker.allgeier-it.de:5000/julia36-ubuntu2004-test:${PATCHLEVEL}
+    image: docker.allgeier-it.de:5000/julia36-ubuntu-test:${PATCHLEVEL}
     depends_on:
       - mongo
     #build:
@@ -36,7 +36,7 @@ services:
       - START_EMILY=yes
 
   julia_test1:
-    image: docker.allgeier-it.de:5000/julia36-ubuntu2004-test:${PATCHLEVEL}
+    image: docker.allgeier-it.de:5000/julia36-ubuntu-test:${PATCHLEVEL}
     #build:
     #  context: ./testsystem
     #  dockerfile: Dockerfile

@@ -1,10 +1,12 @@
 VERSION 0.6
 
 ARG --required PATCHLEVEL
-ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-ubuntu2004-test
+ARG UBUNTU_VERSION=22.04
+ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-ubuntu-test
 ARG JUP_USER
 ARG JUP_PASSWORD
 ARG BETA=false
+
 
 # When bind mount is used, map to local user.
 ARG JULIA_UID_GID=1000
@@ -15,7 +17,7 @@ get:
 
 os-base:
         BUILD +get
-        FROM ubuntu:20.04
+        FROM ubuntu:$UBUNTU_VERSION
 
         ENV DEBIAN_FRONTEND noninteractive
 
