@@ -1,8 +1,8 @@
 VERSION 0.6
 
 ARG --required PATCHLEVEL
-ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-ubuntu2004-test
-ARG BASICAUTH
+ARG UBUNTU_VERSION=22.04
+ARG IMAGE_NAME=docker.allgeier-it.de:5000/julia36-ubuntu-test
 ARG JUP_USER
 ARG JUP_PASSWORD
 
