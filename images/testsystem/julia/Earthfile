@@ -120,7 +120,7 @@ julia-builder:
 
         # Enable MongoDB for Emily and Julia Log.
         RUN sed -i -e 's/^LOG_USE_MONGODB.*/LOG_USE_MONGODB=1/g' /opt/julia/etc/julia.conf
-        RUN sed -i -e 's/^MONGODB_URL=.*/MONGODB_URL=mongodb:\/\/mongo:27017\/?ssl=true\&sockettimeoutms=5000\&connecttimeoutms=5000/g' /opt/julia/etc/julia.conf
+        RUN sed -i -e 's/^MONGODB_URL=.*/MONGODB_URL=mongodb:\/\/mongo:27017\/?ssl=true\&sslinsecure=true\&sockettimeoutms=5000\&connecttimeoutms=5000/g' /opt/julia/etc/julia.conf
 
         RUN sed -i -e 's/^IS_WEBMAILER.*/IS_WEBMAILER=1/g' /opt/julia/etc/julia.conf
         RUN sed -i -e 's/^WEBMAIL_SERVER=.*/WEBMAIL_SERVER=127.0.0.1/g' /opt/julia/etc/julia.conf
